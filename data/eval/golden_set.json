@@ -1,0 +1,29 @@
+{
+  "description": "Golden evaluation set for ScholarRAG — questions over topics well-covered by the arXiv corpus, each with a concise reference answer for context_recall / context_precision.",
+  "questions": [
+    {
+      "question": "What is knowledge distillation and why is it used to compress large language models?",
+      "ground_truth": "Knowledge distillation transfers knowledge from a large 'teacher' model to a smaller 'student' model by training the student to mimic the teacher's output distributions (soft labels) rather than only hard labels. It is used to compress large language models into smaller, faster, and cheaper models that retain much of the teacher's performance, enabling deployment on limited hardware."
+    },
+    {
+      "question": "How does mixture-of-experts routing improve the efficiency of transformer models?",
+      "ground_truth": "Mixture-of-experts (MoE) replaces a dense feed-forward layer with many expert subnetworks and a gating network that routes each token to only a few experts. Because only a small subset of experts is activated per token, the model can scale to far more parameters while keeping the per-token compute roughly constant, improving capacity and efficiency."
+    },
+    {
+      "question": "How does retrieval-augmented generation reduce hallucination in large language models?",
+      "ground_truth": "Retrieval-augmented generation (RAG) retrieves relevant documents from an external knowledge source and conditions the language model's generation on that retrieved context. Grounding answers in retrieved evidence reduces hallucination by giving the model factual context to draw on and enabling citations, instead of relying solely on parametric memory."
+    },
+    {
+      "question": "What is parameter-efficient fine-tuning and how does LoRA work?",
+      "ground_truth": "Parameter-efficient fine-tuning adapts a large pretrained model by updating only a small number of parameters while keeping most weights frozen. LoRA (Low-Rank Adaptation) injects trainable low-rank matrices into the model's weight updates, so only these small matrices are trained, drastically reducing memory and compute compared to full fine-tuning while approaching its quality."
+    },
+    {
+      "question": "Why is quantization used for large language model inference and what are its trade-offs?",
+      "ground_truth": "Quantization reduces the numerical precision of a model's weights and/or activations (for example from 16-bit to 8-bit or 4-bit), shrinking memory footprint and speeding up inference. The main trade-off is a potential loss of accuracy, which techniques like careful calibration, mixed precision, or quantization-aware training aim to minimize."
+    },
+    {
+      "question": "What techniques help transformers handle long context windows efficiently?",
+      "ground_truth": "Handling long context efficiently relies on techniques such as sparse or linear attention that avoid the quadratic cost of full attention, positional-encoding methods that extrapolate to longer sequences, and memory- or retrieval-based approaches that compress or fetch relevant past information rather than attending over everything."
+    }
+  ]
+}

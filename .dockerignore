@@ -1,0 +1,26 @@
+# Keep secrets OUT of the image — they are injected as HF Space Secrets.
+.env
+.env.*
+!.env.example
+
+# Big/irrelevant-at-query-time data. Keep only the 780 KB citation graph
+# (re-included explicitly below).
+data/*
+!data/citations.duckdb
+
+# Dev / build cruft
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.git
+.idea
+.vscode
+notebooks
+tests
+mlruns
+*.log
+Dockerfile.local

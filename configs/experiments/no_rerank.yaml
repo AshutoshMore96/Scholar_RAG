@@ -1,0 +1,7 @@
+# Ablation: disable all reranking to measure its contribution
+retrieval:
+  rerank_top_k: 50           # just pass through candidates
+  graph_rerank:
+    alpha: 1.0
+    beta: 0.0
+    gamma: 0.0

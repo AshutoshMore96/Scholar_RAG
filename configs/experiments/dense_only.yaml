@@ -1,0 +1,6 @@
+# Ablation: dense-only retrieval (no BM25 sparse)
+retrieval:
+  hybrid_dense_weight: 1.0
+  hybrid_sparse_weight: 0.0
+  hyde_enabled: false
+  multi_query_n: 1

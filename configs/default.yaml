@@ -1,0 +1,90 @@
+# ScholarRAG — default runtime configuration
+# Override any value via an experiments/ file or environment variables.
+
+ingestion:
+  categories: ["cs.CL", "cs.IR", "cs.LG", "cs.AI"]
+  # Topic filter — papers must match ANY of these terms in title/abstract on top
+  # of the category filter. Keeps the corpus focused on AI / LLM / RAG instead of
+  # all of cs.LG. Set to null/[] to ingest everything in the categories above.
+  query_terms:                       # broad LLM/ML coverage set
+    - "large language model"
+    - "retrieval-augmented generation"
+    - "quantization"
+    - "knowledge distillation"
+    - "parameter-efficient fine-tuning"
+    - "instruction tuning"
+    - "reinforcement learning from human feedback"
+    - "in-context learning"
+    - "chain-of-thought reasoning"
+    - "mixture of experts"
+    - "model alignment"
+    - "hallucination"
+  max_results_per_query: 500
+  date_from: "2020-01-01"
+  download_pdfs: true
+  pdf_timeout_s: 60
+  rate_limit_delay_s: 3.0   # arXiv asks for ≥3 s between requests
+  citation_sources: ["openalex"]   # OpenAlex only — free, no key, no rate-limit pain
+
+parsing:
+  primary: "nougat"          # nougat | grobid | pymupdf
+  fallback: "pymupdf"
+  nougat_batch_size: 4
+  grobid_url: "${GROBID_URL}"
+
+chunking:
+  strategy: "proposition"    # proposition | semantic | fixed
+  proposition_batch_size: 32
+  max_chunk_tokens: 256
+  overlap_tokens: 32
+  parent_chunk_tokens: 1024  # parent window returned to LLM
+  add_contextual_header: true
+
+embedding:
+  model: "BAAI/bge-m3"
+  batch_size: 64
+  device: "cpu"              # cpu | cuda | mps — auto-falls back to cpu if unavailable
+  max_length: 256            # child chunks are ≤256 tokens; no point padding to 512
+  dense_dim: 1024
+  sparse_dim: 30522          # vocab size for BM25-style sparse
+  enable_colbert: false      # memory-intensive; enable on GPU
+
+storage:
+  qdrant_host: "${QDRANT_HOST}"
+  qdrant_port: 6333
+  collection: "${QDRANT_COLLECTION}"
+  graph_db: "duckdb"         # duckdb | neo4j
+
+retrieval:
+  # HyDE and multi-query each add a slow local-LLM call before retrieval.
+  # Disabled by default for CPU responsiveness; enable on a GPU box for max recall.
+  hyde_enabled: false
+  multi_query_n: 1
+  top_k_candidates: 20        # cross-encoder reranking is slow on CPU; keep the pool small
+  rerank_top_k: 5
+  hybrid_dense_weight: 0.7
+  hybrid_sparse_weight: 0.3
+  graph_rerank:
+    alpha: 0.60              # cross-encoder score weight
+    beta: 0.25               # log(1 + cited_by_count)  [OpenAlex]
+    gamma: 0.15              # recency (1 / (1 + years_old))
+  crag_enabled: false         # off for CPU: LLM self-scoring + reformulation is
+                              # slow and non-deterministic; quality then comes from
+                              # the calibrated cross-encoder score. Enable on GPU.
+  crag_quality_threshold: 0.4
+
+generation:
+  llm: "${OLLAMA_MODEL}"
+  ollama_url: "${OLLAMA_BASE_URL}"
+  max_tokens: 400             # keep reviews concise; CPU generation is slow
+  temperature: 0.1
+  self_rag_reflection: false   # extra full-generation pass; off for CPU speed
+  citation_enforcement: true  # reject claims without citation id
+  abstain_threshold: 0.35    # if context quality < this, abstain
+
+evaluation:
+  ragas_metrics: ["faithfulness", "answer_relevancy", "context_precision", "context_recall"]
+  llm_judge: "${OLLAMA_MODEL}"
+  beir_datasets: ["scifact"]
+  golden_set_path: "data/eval/golden_set.json"
+  mlflow_experiment: "${MLFLOW_EXPERIMENT}"

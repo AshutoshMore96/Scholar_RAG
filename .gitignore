@@ -1,0 +1,31 @@
+# ── SECRETS — never commit / push to the HF Space repo ────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Large / regenerable data ──────────────────────────────────────────────────
+# Keep the tiny citation graph; ignore raw PDFs, parsed docs, eval dumps.
+data/*
+!data/citations.duckdb
+# keep the eval golden set (part of the harness); ignore generated eval outputs
+!data/eval/
+data/eval/*
+!data/eval/golden_set.json
+mlruns/
+
+# ── Python / tooling cruft ────────────────────────────────────────────────────
+.cache/
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+
+# ── IDE / OS ──────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+.DS_Store
