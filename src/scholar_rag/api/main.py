@@ -44,6 +44,7 @@ _engine: RetrievalEngine | None = None
 _generator: CitedLiteratureGenerator | None = None
 _deep_generator: CitedLiteratureGenerator | None = None  # points at a GPU Ollama host if OLLAMA_DEEP_URL set
 _cfg: dict | None = None
+_papers_index: list[dict] | None = None  # distinct-paper corpus index, built once (see _build_papers_index)
 
 
 def _prewarm() -> None:
@@ -56,6 +57,46 @@ def _prewarm() -> None:
         logger.success("Models pre-warmed — first query will be fast.")
     except Exception as exc:
         logger.warning(f"Pre-warm skipped ({exc}).")
+
+
+def _build_papers_index() -> list[dict]:
+    """
+    Scroll the whole collection once and collapse it to the set of distinct
+    papers (title, year, venue, citations), sorted by citation count. Cached in
+    `_papers_index` so the corpus browser is instant after the first build.
+    """
+    global _papers_index
+    if _papers_index is not None:
+        return _papers_index
+    papers: dict[str, dict] = {}
+    client, coll = _engine.store.client, _engine.store.collection
+    offset = None
+    while True:
+        pts, offset = client.scroll(
+            collection_name=coll, limit=4000, offset=offset, with_vectors=False,
+            with_payload=["paper_id", "title", "year", "venue", "cited_by_count"],
+        )
+        for pt in pts:
+            p = pt.payload or {}
+            pid = p.get("paper_id")
+            if pid and pid not in papers:
+                papers[pid] = {
+                    "paper_id": pid, "title": p.get("title", ""), "year": p.get("year"),
+                    "venue": p.get("venue"), "cited_by_count": p.get("cited_by_count", 0) or 0,
+                }
+        if offset is None:
+            break
+    _papers_index = sorted(papers.values(),
+                           key=lambda x: (x["cited_by_count"], x.get("year") or 0), reverse=True)
+    logger.success(f"Corpus index built: {len(_papers_index)} distinct papers.")
+    return _papers_index
+
+
+def _prewarm_corpus() -> None:
+    try:
+        _build_papers_index()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"Corpus index build skipped ({exc}).")
 
 
 def _fast_llm_cfg(cfg_gen: dict) -> dict:
@@ -128,6 +169,7 @@ async def lifespan(app: FastAPI):
     # warm the heavy models in the background so startup stays responsive
     import threading
     threading.Thread(target=_prewarm, daemon=True).start()
+    threading.Thread(target=_prewarm_corpus, daemon=True).start()
     yield
 
 
@@ -422,24 +464,28 @@ def ingest(req: IngestRequest, background_tasks: BackgroundTasks):
 
 
 @app.get("/papers")
-def list_papers(limit: int = 100, offset: int = 0):
+def list_papers(limit: int = 60, offset: int = 0, q: str = ""):
+    """
+    Browse the distinct-paper corpus. `q` filters by title / arXiv id.
+    Served from the cached index (built once); `ready` is False only during the
+    very first build.
+    """
     if _engine is None:
         raise HTTPException(503, "Pipeline not initialised.")
     try:
-        result = _engine.store.client.scroll(
-            collection_name=_engine.store.collection,
-            limit=limit,
-            offset=offset,
-            with_payload=["paper_id", "title", "year", "venue", "cited_by_count"],
-        )
-        papers = {}
-        for pt in result[0]:
-            pid = pt.payload.get("paper_id", "")
-            if pid not in papers:
-                papers[pid] = pt.payload
-        return {"papers": list(papers.values()), "total": len(papers)}
+        idx = _build_papers_index()  # cached after first call
     except Exception as exc:
         raise HTTPException(500, str(exc))
+    ql = q.strip().lower()
+    matched = ([p for p in idx
+                if ql in (p["title"] or "").lower() or ql in p["paper_id"].lower()]
+               if ql else idx)
+    return {
+        "papers": matched[offset: offset + limit],
+        "total": len(idx),
+        "matched": len(matched),
+        "ready": _papers_index is not None,
+    }
 
 
 # ── Pipeline factory ─────────────────────────────────────────────────── #

@@ -168,8 +168,95 @@
 
   <nav>
     <div class="brand"><span class="mark"></span> SCHOLARRAG</div>
-    <div class="navlinks"><span id="corpusStat">CORPUS</span><span>METHOD</span><span>MENU</span></div>
+    <div class="navlinks"><span id="corpusStat" style="cursor:pointer" onclick="openCorpus()">CORPUS</span><span style="cursor:pointer" onclick="openMethod()">METHOD</span><span>MENU</span></div>
   </nav>
+
+  <style>
+    .cm-ov{position:fixed;inset:0;background:rgba(3,4,8,.72);backdrop-filter:blur(7px);z-index:60;
+      display:none;opacity:0;transition:opacity .25s}
+    .cm-ov.show{display:flex;opacity:1}
+    .cm{margin:auto;width:min(760px,92vw);max-height:82vh;display:flex;flex-direction:column;
+      background:linear-gradient(180deg,rgba(20,26,44,.55),var(--glass));border:1px solid var(--glass-brd);
+      border-radius:20px;box-shadow:var(--glow);overflow:hidden}
+    .cm-hd{padding:20px 22px 16px;border-bottom:1px solid var(--glass-brd);position:relative}
+    .cm-hd h3{font-size:14px;letter-spacing:.18em;color:var(--ink);font-weight:700}
+    .cm-hd .sub{color:var(--muted);font-size:12px;margin-top:4px}
+    .cm-hd .x{position:absolute;top:14px;right:18px;cursor:pointer;color:var(--muted);font-size:24px;line-height:1}
+    .cm-hd .x:hover{color:var(--ink)}
+    .cm-srch{margin-top:14px;width:100%;box-sizing:border-box;background:var(--glass);
+      border:1px solid var(--glass-brd);border-radius:12px;padding:10px 14px;color:var(--ink);font-size:13px;outline:none}
+    .cm-srch:focus{border-color:rgba(110,168,255,.5)}
+    .cm-list{overflow-y:auto;padding:8px 10px}
+    .cm-row{display:flex;align-items:baseline;gap:14px;padding:11px 12px;border-radius:12px;
+      text-decoration:none;color:var(--ink);transition:background .15s}
+    .cm-row:hover{background:rgba(110,168,255,.08)}
+    .cm-row .t{flex:1;font-size:13.5px;line-height:1.35}
+    .cm-row .meta{color:var(--faint);font-size:11px;white-space:nowrap}
+    .cm-more{text-align:center;padding:14px;color:var(--muted);font-size:12px;cursor:pointer}
+    .cm-more:hover{color:var(--ink)}
+  </style>
+  <div class="cm-ov" id="corpusOv" onclick="if(event.target===this)closeCorpus()">
+    <div class="cm">
+      <div class="cm-hd">
+        <span class="x" onclick="closeCorpus()">×</span>
+        <h3>THE CORPUS</h3>
+        <div class="sub" id="cmSub">Loading papers…</div>
+        <input class="cm-srch" id="cmSearch" placeholder="Search titles or arXiv id…" oninput="corpusSearch()">
+      </div>
+      <div class="cm-list" id="cmList"></div>
+    </div>
+  </div>
+
+  <style>
+    .mth-list{overflow-y:auto;padding:16px 22px 24px}
+    .mth-step{display:flex;gap:15px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+    .mth-step:last-child{border-bottom:none}
+    .mth-n{flex:none;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;
+      font-size:12px;font-weight:700;color:#05060a;background:linear-gradient(135deg,var(--tealA),var(--tealB))}
+    .mth-b h4{font-size:13.5px;color:var(--ink);margin:2px 0 4px;font-weight:650}
+    .mth-b h4 .tag{font-size:9.5px;letter-spacing:.1em;color:var(--pink);border:1px solid rgba(255,155,208,.4);
+      border-radius:6px;padding:1px 6px;margin-left:8px;text-transform:uppercase;vertical-align:middle}
+    .mth-b p{font-size:12.5px;color:var(--muted);line-height:1.5}
+    .mth-b code{color:var(--tealA);font-size:11.5px;font-family:ui-monospace,monospace}
+    .mth-ft{padding:14px 22px;border-top:1px solid var(--glass-brd);font-size:11.5px;color:var(--faint)}
+    .mth-ft a{color:var(--tealB);text-decoration:none} .mth-ft a:hover{text-decoration:underline}
+  </style>
+  <div class="cm-ov" id="methodOv" onclick="if(event.target===this)closeMethod()">
+    <div class="cm">
+      <div class="cm-hd">
+        <span class="x" onclick="closeMethod()">×</span>
+        <h3>THE METHOD</h3>
+        <div class="sub">How a question becomes a grounded, cited answer — the retrieval &amp; generation pipeline.</div>
+      </div>
+      <div class="mth-list">
+        <div class="mth-step"><div class="mth-n">1</div><div class="mth-b">
+          <h4>Query expansion <span class="tag">deep</span></h4>
+          <p>HyDE writes a hypothetical abstract for your question, plus multi-query paraphrases — so retrieval matches academic phrasing, not just your wording.</p></div></div>
+        <div class="mth-step"><div class="mth-n">2</div><div class="mth-b">
+          <h4>Hybrid retrieval</h4>
+          <p><b>BGE-M3</b> produces <b>dense</b> (semantic) and <b>sparse</b> (lexical) vectors; both are searched in Qdrant, so exact terms and meaning both count.</p></div></div>
+        <div class="mth-step"><div class="mth-n">3</div><div class="mth-b">
+          <h4>Reciprocal Rank Fusion</h4>
+          <p>Merges the dense, sparse, and per-variant rankings into one list — no score-scale tuning required.</p></div></div>
+        <div class="mth-step"><div class="mth-n">4</div><div class="mth-b">
+          <h4>Cross-encoder rerank</h4>
+          <p>A Jina reranker jointly scores each (query, passage) pair for precise relevance — far sharper than cosine similarity.</p></div></div>
+        <div class="mth-step"><div class="mth-n">5</div><div class="mth-b">
+          <h4>Citation-graph rerank</h4>
+          <p>Re-orders by <code>α·relevance + β·log(citations) + γ·recency</code>, surfacing influential and current work — not just topically similar text.</p></div></div>
+        <div class="mth-step"><div class="mth-n">6</div><div class="mth-b">
+          <h4>Quality gate <span class="tag">CRAG</span></h4>
+          <p>The retrieved context is scored for sufficiency; if it's too weak the system <b>abstains</b> ("insufficient evidence") instead of guessing.</p></div></div>
+        <div class="mth-step"><div class="mth-n">7</div><div class="mth-b">
+          <h4>Grounded generation</h4>
+          <p>A Groq LLM (Llama-3.1-8B fast / 3.3-70B deep) writes a literature review with an inline <code>[arXiv id]</code> citation for every claim.</p></div></div>
+        <div class="mth-step"><div class="mth-n">8</div><div class="mth-b">
+          <h4>Claim verification</h4>
+          <p>Each sentence is entailment-checked against the sources; unsupported claims are dropped — lifting measured faithfulness <b>+56%</b>.</p></div></div>
+      </div>
+      <div class="mth-ft">Runs local-first (BGE-M3 + Ollama) or scales to hosted APIs (Groq · Jina · Qdrant Cloud) by config. Deep dive → <a href="https://github.com" onclick="return false" title="see ARCHITECTURE.md in the repo">ARCHITECTURE.md</a></div>
+    </div>
+  </div>
 
   <div class="wrap">
     <section class="hero">
@@ -311,10 +398,55 @@ function draw(){
 }
 draw();
 
-/* ---------- corpus stat ---------- */
+/* ---------- corpus browser ---------- */
+let cmOffset=0, cmQuery='', cmMatched=0, cmBusy=false, cmTimer=0;
 fetch('/papers?limit=1').then(r=>r.json()).then(d=>{
-  if(d && d.total!=null){ document.getElementById('corpusStat').textContent = 'CORPUS · LIVE'; }
+  if(d && d.total!=null){
+    document.getElementById('corpusStat').textContent = 'CORPUS · '+d.total.toLocaleString();
+  }
 }).catch(()=>{});
+
+function openCorpus(){
+  document.getElementById('corpusOv').classList.add('show');
+  const s=document.getElementById('cmSearch'); s.value=''; cmQuery=''; s.focus(); cmReset();
+}
+function closeCorpus(){ document.getElementById('corpusOv').classList.remove('show'); }
+function openMethod(){ document.getElementById('methodOv').classList.add('show'); }
+function closeMethod(){ document.getElementById('methodOv').classList.remove('show'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeCorpus(); closeMethod(); } });
+function corpusSearch(){ clearTimeout(cmTimer); cmTimer=setTimeout(()=>{
+  cmQuery=document.getElementById('cmSearch').value.trim(); cmReset(); }, 250); }
+function cmReset(){ cmOffset=0; document.getElementById('cmList').innerHTML=''; cmLoad(); }
+function cmLoad(){
+  if(cmBusy) return; cmBusy=true;
+  const list=document.getElementById('cmList'), sub=document.getElementById('cmSub');
+  const old=list.querySelector('.cm-more'); if(old) old.remove();
+  fetch(`/papers?limit=60&offset=${cmOffset}&q=${encodeURIComponent(cmQuery)}`)
+    .then(r=>r.json()).then(d=>{
+      cmMatched=d.matched;
+      if(cmOffset===0 && (!d.papers||!d.papers.length)){
+        list.innerHTML='<div class="cm-more">No matching papers.</div>'; cmBusy=false;
+        sub.textContent=`0 of ${(d.total||0).toLocaleString()} papers match "${cmQuery}"`; return;
+      }
+      (d.papers||[]).forEach(p=>{
+        const a=document.createElement('a'); a.className='cm-row'; a.target='_blank'; a.rel='noopener';
+        a.href='https://arxiv.org/abs/'+String(p.paper_id).replace(/v\d+$/,'');
+        a.innerHTML=`<span class="t">${escapeHtml(p.title||p.paper_id)}</span>`+
+          `<span class="meta">${p.year!=null?p.year:'—'} · ${p.cited_by_count||0} cites</span>`;
+        list.appendChild(a);
+      });
+      cmOffset+=(d.papers||[]).length;
+      if(cmOffset<cmMatched){
+        const m=document.createElement('div'); m.className='cm-more';
+        m.textContent=`Show more — ${cmOffset.toLocaleString()} of ${cmMatched.toLocaleString()}`;
+        m.onclick=cmLoad; list.appendChild(m);
+      }
+      sub.textContent = cmQuery
+        ? `${cmMatched.toLocaleString()} of ${(d.total||0).toLocaleString()} papers match "${cmQuery}"`
+        : `${(d.total||0).toLocaleString()} arXiv papers in the corpus`;
+      cmBusy=false;
+    }).catch(()=>{ cmBusy=false; document.getElementById('cmSub').textContent='Failed to load corpus.'; });
+}
 
 /* ---------- ask flow ---------- */
 const q=document.getElementById('q'), askBtn=document.getElementById('askBtn');
