@@ -7,6 +7,15 @@
 [![Deploy](https://img.shields.io/badge/deploy-Modal-8A2BE2?style=flat-square)](modal/scholar_rag_modal.py)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white&style=flat-square)
+![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch&logoColor=white&style=flat-square)
+![BGE-M3](https://img.shields.io/badge/BGE--M3-FFD21E?logo=huggingface&logoColor=black&style=flat-square)
+![Qdrant](https://img.shields.io/badge/Qdrant-24386C?logo=qdrant&logoColor=white&style=flat-square)
+![Groq](https://img.shields.io/badge/Groq-F55036?style=flat-square)
+![Jina](https://img.shields.io/badge/Jina%20Reranker-002FA7?style=flat-square)
+![DuckDB](https://img.shields.io/badge/DuckDB-000000?logo=duckdb&logoColor=FFF000&style=flat-square)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white&style=flat-square)
+
 ScholarRAG is an end-to-end **retrieval-augmented generation** system over academic
 papers. It ingests arXiv PDFs, indexes them as hybrid dense + sparse vectors, and
 answers research questions with a synthesized literature review — every claim
