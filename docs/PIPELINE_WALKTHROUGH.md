@@ -210,7 +210,7 @@ collection and a populated DuckDB graph. The knowledge base now exists.
 
 *Goal: answer a research question with a traceable, cited literature review.*
 
-A user submits a question (via Streamlit UI or `POST /ask`). The FastAPI handler
+A user submits a question (via the web UI or `POST /ask`). The FastAPI handler
 in `api/main.py` hands it to `RetrievalEngine.retrieve()` in
 `retrieve/engine.py`, which runs the following funnel. **Every step narrows or
 sharpens the candidate set.**
@@ -360,28 +360,22 @@ traceable — and refuse if the evidence is too thin.
   enforcement + abstention make grounding a *property of the system* rather than a
   hope about the model. (See DESIGN_DECISIONS §9.)
 
-### Optional — ReAct agent — `generate/agent.py`
-
-For multi-hop questions ("what does paper X cite that's also relevant to Y?"), a
-ReAct agent can iteratively call `search_papers`, `expand_citation`, and
-`fetch_abstract` tools before answering.
-
 **Output of Step 10:** the cited literature review.
 
 ---
 
 ## Step 11 — Serve the answer back
 
-**Tools:** **FastAPI** (API), **Streamlit** (UI).
+**Tools:** **FastAPI** (API + web UI, streamed over SSE).
 
-**Code:** `api/main.py`, `ui/app.py`
+**Code:** `api/main.py`, `api/static/index.html`
 
-- **How:** `api/main.py`'s `/ask` handler assembles an `AskResponse` — the review,
-  the citation cards (paper_id, title, year, venue, score), the context-quality
-  score, the abstain flag, and the measured latency.
-- The **Streamlit UI** renders the review, then shows each source as an expandable
-  card with its score and a direct **arXiv link**, plus a color-coded
-  context-quality indicator. *Traceability made visible.*
+- **How:** `api/main.py`'s `/ask/stream` handler streams the review token-by-token
+  over Server-Sent Events, sending the source citations and the knowledge graph up
+  front (paper_id, title, year, venue, score, context-quality, abstain flag).
+- The **web UI** renders the review as it streams, shows each source as a card with
+  its score and a direct **arXiv link**, and draws a force-directed knowledge graph
+  of the retrieved papers. *Traceability made visible.*
 
 **Output of Step 11:** what the user sees — a cited mini-literature-review they can
 verify passage by passage.
@@ -441,7 +435,7 @@ Embedded chunks
   │  crag (Ollama LLM)                         ── quality gate / retry
   │  cited_generator (Ollama LLM + validators) ── grounded, cited review / abstain
   ▼
-FastAPI → Streamlit                            ── cited review + source cards
+FastAPI → web UI (SSE)                         ── cited review + graph + sources
   │
   └─ RAGAS + IR metrics + ablations → MLflow   ── prove it works
 ```

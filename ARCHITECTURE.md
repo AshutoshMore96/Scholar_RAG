@@ -442,8 +442,8 @@ and the verifier is a third, independent model so the comparison isn't circular.
 - **Local (self-contained):** BGE-M3 + bge-reranker + Ollama, Qdrant in Docker.
   `make up && make serve`.
 - **Hosted (8 GB-friendly):** set `DEEP_LLM_API_KEY` (Groq) + `JINA_API_KEY`;
-  reranking and generation move to APIs, only BGE-M3 stays local. Deploy to a
-  free Hugging Face Space — see [`deploy/HF_SPACES_DEPLOY.md`](deploy/HF_SPACES_DEPLOY.md).
+  reranking and generation move to APIs, only BGE-M3 stays local. Deployed free on
+  **Modal** (CPU, scale-to-zero) — see [`modal/scholar_rag_modal.py`](modal/scholar_rag_modal.py).
 
 *Every number in this document was measured on the target 8 GB machine during
 development, not estimated.*

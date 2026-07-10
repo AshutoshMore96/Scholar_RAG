@@ -1,20 +1,34 @@
-# ScholarRAG — Academic Knowledge Base & Literature-Review Generator
+# ScholarRAG
 
-ScholarRAG is a production-grade RAG pipeline over arXiv papers.  It ingests
-scientific papers, parses figures and equations with Nougat/GROBID, and serves
-a literature-review generator that answers research questions with **traceable
-inline citations** and quantitative quality metrics — or an explicit
-*abstention* when the corpus can't support an answer.
+**Ask a research question — get a grounded, citation-backed literature review over 1,785 arXiv papers.**
 
-**▶ Live demo** (free, hosted on Modal): **https://ashutoshmore7596--scholar-rag-web.modal.run**
+[![Live demo](https://img.shields.io/badge/demo-live-brightgreen?style=flat-square)](https://ashutoshmore7596--scholar-rag-web.modal.run)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](pyproject.toml)
+[![Deploy](https://img.shields.io/badge/deploy-Modal-8A2BE2?style=flat-square)](modal/scholar_rag_modal.py)
+[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
-### The knowledge graph
+ScholarRAG is an end-to-end **retrieval-augmented generation** system over academic
+papers. It ingests arXiv PDFs, indexes them as hybrid dense + sparse vectors, and
+answers research questions with a synthesized literature review — every claim
+carrying an inline `[arXiv]` citation, or an explicit *abstention* when the
+retrieved evidence is too weak to answer.
 
-Every query renders an interactive, dependency-free **force-directed knowledge graph** — the papers it retrieved, linked by semantic similarity, sized by relevance + citations. In **deep** mode, papers surfaced *only* by query-expansion (HyDE / multi-query) pulse with a **pink halo**, so you can literally see what the deeper pipeline added over a plain query:
+**▶ Live demo** (free, on Modal): **https://ashutoshmore7596--scholar-rag-web.modal.run**
 
-![ScholarRAG knowledge graph for a deep-mode query](docs/assets/knowledge-graph.svg)
+![ScholarRAG — per-query knowledge graph of retrieved papers](docs/assets/knowledge-graph.svg)
 
-### Two ways to run — local-first, hosted-optional
+## ✨ Features
+
+- **Hybrid retrieval** — BGE-M3 dense (semantic) *and* sparse (lexical) vectors, fused with Reciprocal Rank Fusion.
+- **Query expansion** — HyDE hypothetical documents + multi-query paraphrasing bridge the gap between casual questions and dense academic prose.
+- **Two-stage reranking** — a cross-encoder for precision, then a citation-graph reranker (`α·relevance + β·log(citations) + γ·recency`) that surfaces influential, recent work.
+- **Corrective RAG + calibrated abstention** — says *"insufficient evidence"* instead of hallucinating when retrieval is weak.
+- **Grounded generation** — cited reviews with post-hoc **claim verification** that drops unsupported sentences (measured **+56 %** faithfulness).
+- **Interactive knowledge graph** — every query renders a force-directed graph of the retrieved papers; papers surfaced only by *deep* query-expansion pulse with a halo.
+- **Native RAGAS evaluation** — faithfulness, answer-relevancy, context precision/recall, judged by an independent model.
+- **Local-first, hosted-optional** — runs fully local (Ollama · BGE-M3 · Docker Qdrant) *or* scales to free hosted inference (Groq · Jina · Qdrant Cloud) by config, no code change.
+
+## Two ways to run — local-first, hosted-optional
 
 Every model-serving component runs **local by default or hosted when you set a
 key**, chosen through a single backend abstraction
@@ -34,7 +48,7 @@ onto free hosted inference:
 free hosted APIs — which is exactly what powers the live demo, deployed on
 **Modal** (CPU, scale-to-zero: `modal deploy modal/scholar_rag_modal.py`).
 
-### Further reading
+## Further reading
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** — retrieval design + the latency/quality
   debugging investigations (the engineering story, with measurements).
@@ -564,16 +578,15 @@ scholar-rag/
 │   │   └── engine.py             # full retrieval pipeline
 │   ├── generate/
 │   │   ├── prompts.py            # system/user prompt templates
-│   │   ├── cited_generator.py    # Self-RAG + citation enforcement
-│   │   └── agent.py              # optional ReAct multi-hop agent
+│   │   ├── llm.py                # dual Ollama/Groq client (SSE streaming)
+│   │   └── cited_generator.py    # cited review + Self-RAG + claim grounding
 │   ├── eval/
 │   │   ├── ragas_eval.py         # RAGAS metrics (native, Groq-judged) + run_eval CLI
 │   │   ├── retrieval_metrics.py  # nDCG / Recall / MRR
 │   │   └── ablation.py           # systematic ablation harness
-│   ├── api/
-│   │   └── main.py               # FastAPI: /ask, /ingest, /health
-│   └── ui/
-│       └── app.py                # Streamlit UI
+│   └── api/
+│       ├── main.py               # FastAPI: /ask, /papers, knowledge graph
+│       └── static/index.html     # web UI (served at /)
 └── tests/
     ├── test_chunkers.py
     ├── test_hybrid.py

@@ -34,13 +34,10 @@ embed:
 	@echo "Re-embedding is handled within the ingestion pipeline."
 	@echo "Run 'make ingest' to trigger a full re-index."
 
-serve:
-	uvicorn src.scholar_rag.api.main:app --host 0.0.0.0 --port 8000 --reload &
-	streamlit run src/scholar_rag/ui/app.py --server.port 8501
-	@echo ""
-	@echo "  API:      http://localhost:8000/docs"
-	@echo "  UI:       http://localhost:8501"
-	@echo "  MLflow:   http://localhost:5000"
+serve:   ## Start the API + web UI at http://localhost:8000/
+	@echo "  Web UI:   http://localhost:8000/"
+	@echo "  API docs: http://localhost:8000/docs"
+	uvicorn scholar_rag.api.main:app --host 0.0.0.0 --port 8000 --reload
 
 eval:   ## RAG evaluation — RAGAS metrics (Groq judge) on the golden set. Stop `serve` first.
 	$(PYTHON) scholar_rag.eval.run_eval

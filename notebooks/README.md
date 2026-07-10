@@ -31,7 +31,7 @@ the local ScholarRAG server expects**.
    QDRANT_API_KEY=<key>
    ```
    `QdrantStore` already honors these (they override `QDRANT_HOST/PORT`), so the
-   FastAPI/Streamlit server queries the cloud collection with no code change.
+   FastAPI server queries the cloud collection with no code change.
 
 ### B. Local on-disk + snapshot
 1. Leave `QDRANT_URL` blank — the notebook runs Qdrant on-disk in Colab and

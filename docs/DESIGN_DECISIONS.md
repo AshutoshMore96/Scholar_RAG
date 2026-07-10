@@ -363,24 +363,25 @@ metrics as the un-foolable ground truth alongside it.
 
 ---
 
-## 11. Serving — **FastAPI + Streamlit**
+## 11. Serving — **FastAPI (API + web UI)**
 
-**Decision:** FastAPI for the service layer, Streamlit for the UI.
+**Decision:** FastAPI serves both the API and the web UI (a self-contained
+HTML/CSS/JS page it hosts at `/`), streaming answers over Server-Sent Events.
 
 **Reasoning:**
 - **FastAPI**: async, automatic OpenAPI docs, Pydantic validation at the boundary.
-  The `/ask`, `/ingest`, `/health`, `/papers` contract is typed and
+  The `/ask`, `/ask/stream`, `/ingest`, `/papers` contract is typed and
   self-documenting. Pydantic request models (with `min_length`, ranges) reject
   malformed input *before* it touches the pipeline.
-- **Streamlit**: a researcher-facing UI in pure Python with zero frontend build.
-  For a research/portfolio tool whose users are scientists, not consumers, this
-  is exactly the right level of investment. Citations render as expandable cards
-  with arXiv links and a visible context-quality score — *traceability made
-  visible*, which is the whole point of the product.
+- **Server-Sent Events**: the review streams token-by-token, and the source
+  citations + knowledge graph are sent up front — traceability is visible while
+  the answer is still being written.
+- **Single served page** (no separate frontend process/build): one `uvicorn`
+  command runs the whole app, which is what makes it trivial to containerise and
+  deploy to a scale-to-zero host like Modal.
 
-**Trade-off accepted:** Streamlit is not a production consumer frontend (no fine
-UI control, re-runs top-to-bottom). That's a non-goal — this is a research tool,
-and Streamlit's speed-to-build is worth far more here than pixel control.
+**Trade-off accepted:** a hand-written page instead of a framework — fine here,
+since the UI is a focused single view (ask · results · corpus · knowledge graph).
 
 ---
 
