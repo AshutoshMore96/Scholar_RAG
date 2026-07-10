@@ -1,20 +1,4 @@
----
-title: ScholarRAG
-emoji: 📚
-colorFrom: indigo
-colorTo: purple
-sdk: docker
-app_port: 7860
-pinned: false
-short_description: Academic literature-review RAG over arXiv papers
----
-
 # ScholarRAG — Academic Knowledge Base & Literature-Review Generator
-
-> **Domain:** EdTech / R&D  
-> **Stack:** BGE-M3 hybrid (dense+sparse) · Qdrant · cross-encoder + citation-graph reranking · FastAPI + SSE streaming  
-> **Runs:** fully **local** (Ollama + bge-reranker + Docker Qdrant) — *or* scale to free **hosted** inference (Groq + Jina + Qdrant Cloud), switched by config, no code change  
-> **Corpus:** 1,785 arXiv papers · 147,580 chunks · **Cost:** $0 either way  
 
 ScholarRAG is a production-grade RAG pipeline over arXiv papers.  It ingests
 scientific papers, parses figures and equations with Nougat/GROBID, and serves
@@ -22,23 +6,7 @@ a literature-review generator that answers research questions with **traceable
 inline citations** and quantitative quality metrics — or an explicit
 *abstention* when the corpus can't support an answer.
 
-### ⭐ Engineering highlights → **[ARCHITECTURE.md](ARCHITECTURE.md)**
-
-The retrieval design plus two real debugging investigations, with the measured
-before/after numbers:
-
-- **A 10× latency regression** traced not to the code but to **memory** — 11 GB of
-  models thrashing an 8 GB laptop's swap, slowing *every* stage at once. Found by
-  profiling stage-by-stage (isolated vs in-process timings disagreed 40×) and
-  fixed by offloading the memory-heavy models: **deep-mode 47 s → 4.5 s**,
-  embedding 44 s → 2.4 s.
-- **A quality metric that lied** — `min(judge, reranker)` let a cautious LLM judge
-  cap a strong retrieval, making deep mode *report* worse quality than it
-  delivered. Fixed with an asymmetric veto (judge vetoes weak context, never caps
-  strong).
-- **An honest evaluation** of whether "deep" retrieval earns its cost — it changes
-  30–70 % of retrieved papers, a genuine recall/precision trade-off rather than a
-  free upgrade.
+**▶ Live demo** (free, hosted on Modal): **https://ashutoshmore7596--scholar-rag-web.modal.run**
 
 ### The knowledge graph
 
@@ -62,9 +30,9 @@ onto free hosted inference:
 | Query embedding | BGE-M3 — always local (must match the corpus vectors) | — |
 
 `make up && make serve` gives a fully self-contained system. Setting
-`DEEP_LLM_API_KEY` / `JINA_API_KEY` / `QDRANT_URL` moves the RAM-heavy pieces to
-hosted APIs — the same design that lets it deploy to a free **8 GB Hugging Face
-Space** (see [`deploy/HF_SPACES_DEPLOY.md`](deploy/HF_SPACES_DEPLOY.md)).
+`DEEP_LLM_API_KEY` / `JINA_API_KEY` / `QDRANT_URL` moves the RAM-heavy pieces onto
+free hosted APIs — which is exactly what powers the live demo, deployed on
+**Modal** (CPU, scale-to-zero: `modal deploy modal/scholar_rag_modal.py`).
 
 ### Further reading
 
@@ -103,9 +71,9 @@ arXiv API / S3 · OpenAlex · Semantic Scholar
                           │      hybrid+RRF · rerank     │
                           │      graph-boost · CRAG      │
                           ▼      cited generation ◀──────┘
-                    Streamlit UI
+                    Web UI (served at /)
                           │
-                    RAGAS/MLflow eval loop
+                    RAGAS eval loop
 ```
 
 ---
@@ -315,9 +283,7 @@ QdrantStore().create_collection()
 print("Collection created.")
 EOF
 
-# Verify in the Qdrant dashboard (optional):
-# open cd scholar-rag && source .venv/bin/activate
-streamlit run src/scholar_rag/ui/app.py --server.port 8501    # → http://localhost:8501
+# Verify in the Qdrant dashboard (optional): http://localhost:6333/dashboard
 ```
 
 ---
@@ -391,37 +357,38 @@ tests/test_citation_enforcement.py::...           PASSED (x3)
 
 ---
 
-### Phase 8 — Start the API and UI
+### Phase 8 — Start the API and open the UI
+
+The FastAPI server hosts both the API **and** the web UI at `/` — no separate
+frontend process needed:
 
 ```bash
-# Terminal 1 — FastAPI (if not already running):
-uvicorn src.scholar_rag.api.main:app --host 0.0.0.0 --port 8000 --reload
-
-# Terminal 2 — Streamlit UI:
-streamlit run src/scholar_rag/ui/app.py --server.port 8501
+make serve
+# or directly:
+uvicorn scholar_rag.api.main:app --host 0.0.0.0 --port 8000
 ```
 
 Open your browser:
 
 | Service | URL |
 |---|---|
-| **Streamlit UI** | http://localhost:8501 |
+| **Web UI** (ask · corpus · method · results · knowledge graph) | http://localhost:8000/ |
 | **FastAPI docs (Swagger)** | http://localhost:8000/docs |
-| **MLflow experiment tracker** | http://localhost:5000 |
 | **Qdrant dashboard** | http://localhost:6333/dashboard |
+| **MLflow experiment tracker** (if running) | http://localhost:5001 |
 
 ---
 
 ### Phase 9 — Ask a research question
 
-**Via the Streamlit UI:**
+**Via the web UI:**
 
-1. Open http://localhost:8501
-2. Type a question in the text area, e.g.:
+1. Open http://localhost:8000/
+2. Type a question in the search box, e.g.:
    - *"What are the trade-offs between late-interaction and bi-encoder retrieval for long documents?"*
    - *"How does instruction tuning affect LLM generalisation?"*
-3. Optionally set year range or minimum citations in the sidebar.
-4. Click **Ask**.
+3. Optionally set the year range or minimum citations in the filters.
+4. Click **Ask** — the cited review streams in, with a source knowledge graph below.
 5. The cited literature review appears with expandable source cards and arXiv links.
 
 **Via the API directly:**
@@ -532,10 +499,9 @@ docker compose down
 # Stop Ollama (if you started it manually):
 pkill ollama
 
-# Stop FastAPI / Streamlit:
-# Ctrl-C in each terminal, or:
+# Stop the API server:
+# Ctrl-C in the terminal, or:
 pkill -f uvicorn
-pkill -f streamlit
 ```
 
 ---
