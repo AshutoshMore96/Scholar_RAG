@@ -120,7 +120,7 @@ windows for *generation*, with an LLM-generated contextual header on each child.
 
 1. **Propositions are context-poor.** "It improves accuracy by 4%." — *what*
    does, on *what task*? An atomic proposition can lose its referent.
-   → **Solution: contextual headers** (Anthropic's contextual-retrieval idea).
+   → **Solution: contextual headers** (contextual-retrieval).
    Before embedding, an LLM prepends one sentence: *"This passage is from the
    Methods section of <title>, discussing <topic>."* This restores the context
    the decomposition removed, so the embedding is disambiguated.
@@ -245,7 +245,7 @@ day a feature needs them, I switch. Until then, simplicity wins.
 
 ## 7. Generation LLM — **Ollama running Llama 3.1 8B (Qwen2.5 / Mistral as swaps)**
 
-**Alternatives considered:** GPT-4/Claude via API (paid), a 70B local model,
+**Alternatives considered:** hosted LLM APIs (paid), a 70B local model,
 Llama 3.1 8B / Qwen2.5 7B / Mistral 7B via Ollama.
 
 **Decision:** A 7-8B-class instruct model served locally through Ollama.

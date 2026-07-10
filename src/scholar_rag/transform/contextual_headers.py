@@ -1,5 +1,5 @@
 """
-Contextual chunk headers (Anthropic-style contextual retrieval).
+Contextual chunk headers (contextual retrieval).
 
 Prepends a short LLM-generated context line to each chunk:
   "This passage is from the Methods section of <title>, discussing <topic>."
