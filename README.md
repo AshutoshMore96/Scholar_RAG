@@ -15,7 +15,7 @@ retrieved evidence is too weak to answer.
 
 **▶ Live demo** (free, on Modal): **https://ashutoshmore7596--scholar-rag-web.modal.run**
 
-![ScholarRAG — per-query knowledge graph of retrieved papers](docs/assets/knowledge-graph.svg)
+![ScholarRAG web UI](docs/assets/ui.png)
 
 ## ✨ Features
 
@@ -27,6 +27,10 @@ retrieved evidence is too weak to answer.
 - **Interactive knowledge graph** — every query renders a force-directed graph of the retrieved papers; papers surfaced only by *deep* query-expansion pulse with a halo.
 - **Native RAGAS evaluation** — faithfulness, answer-relevancy, context precision/recall, judged by an independent model.
 - **Local-first, hosted-optional** — runs fully local (Ollama · BGE-M3 · Docker Qdrant) *or* scales to free hosted inference (Groq · Jina · Qdrant Cloud) by config, no code change.
+
+Every query renders a **knowledge graph** of the retrieved papers — linked by semantic similarity, sized by relevance and citations; papers surfaced only by deep query-expansion pulse with a pink halo:
+
+![ScholarRAG — per-query knowledge graph](docs/assets/knowledge-graph.svg)
 
 ## Two ways to run — local-first, hosted-optional
 
