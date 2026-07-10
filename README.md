@@ -105,17 +105,47 @@ arXiv API / S3 · OpenAlex · Semantic Scholar
 
 ---
 
-## Advanced techniques
+## Techniques
 
-| Failure mode of naive RAG | Technique applied |
+### Retrieval & generation (RAG)
+
+Every technique here exists to fix a specific failure mode of naive RAG:
+
+| Problem with naive RAG | Technique applied |
 |---|---|
-| Fixed chunks split arguments mid-thought | **Proposition-based + layout-aware chunking** |
-| Short query ≠ dense academic phrasing | **HyDE + multi-query expansion** |
-| Pure vector search misses exact terms | **Hybrid BM25+dense with RRF** |
-| Top-k cosine is noisy | **Cross-encoder reranking (bge-reranker-v2-m3)** |
-| All papers treated equally | **Citation-graph-aware reranking** (α·rerank + β·log_influence + γ·recency) |
-| LLM hallucinates | **Self-RAG reflection + citation enforcement + abstention** |
-| Opaque evaluation | **RAGAS metric suite** (native, Groq-judged) + optional MLflow logging |
+| Fixed chunks split arguments mid-thought | **Proposition-based + layout-aware chunking** — parent/child hierarchy, contextual headers |
+| Short query ≠ dense academic phrasing | **HyDE** (hypothetical document embeddings) **+ multi-query expansion** |
+| Pure vector search misses exact terms | **Hybrid dense + sparse retrieval** (BGE-M3), fused with **Reciprocal Rank Fusion (RRF)** |
+| Top-k cosine similarity is noisy | **Cross-encoder reranking** (bge-reranker-v2-m3 locally / Jina Reranker hosted) |
+| All papers treated equally | **Citation-graph reranking** — `α·relevance + β·log(1+citations) + γ·recency` |
+| Retrieval can silently be wrong | **CRAG** (Corrective RAG) — an LLM judge scores context and can reformulate + re-retrieve |
+| The model asserts beyond its sources | **Self-RAG reflection + citation enforcement + claim grounding** (entailment-verify every sentence) |
+| Confidently answering on weak evidence | **Calibrated abstention** — returns *"insufficient evidence"* below a quality threshold |
+| One-size-fits-all retrieval | **Fast vs Deep modes** — deep adds HyDE + multi-query + CRAG for broader recall |
+
+### Optimization
+
+- **INT8 scalar quantization** of the Qdrant vectors — keeps 147K chunks inside the free-tier memory budget with negligible recall loss.
+- **Named vectors + payload indexes** in Qdrant — one collection serves dense + sparse search and metadata (year / citation) filters.
+- **Batched query embedding** — all query variants embedded in a single BGE-M3 pass.
+- **Memory-aware model offloading** — the 2 GB reranker → Jina API and generation → Groq, freeing an 8 GB machine from swap-thrash (**deep-mode latency 47 s → 4.5 s**, embedding 44 s → 2.4 s).
+- **Server-Sent-Events streaming** — the review streams token-by-token; source citations and the knowledge graph are sent up front.
+- **Prewarm + keep-alive + response cache** — the first query is warm, repeat queries are instant.
+- **Scale-to-zero deployment** — BGE-M3 is baked into the container image for fast cold starts; **$0 when idle** on Modal.
+
+### Evaluation
+
+- **RAGAS metric suite**, implemented **natively** (no `ragas` / `langchain` dependency):
+  - **Faithfulness** — fraction of the answer's atomic claims entailed by the retrieved context.
+  - **Answer relevancy** — cosine similarity between the question and questions reverse-generated from the answer (BGE-M3).
+  - **Context precision** — average-precision of the retrieved contexts judged useful.
+  - **Context recall** — fraction of the reference answer's claims attributable to the context.
+- **Independent-judge (non-circular) scoring** — claims are verified by one model (Llama-4-Scout-17B) and evaluated by a *different* one (Llama-3.1-8B), so faithfulness can't rise by construction.
+- **Retrieval metrics** — nDCG / Recall / MRR (`eval/retrieval_metrics.py`).
+- **Ablation harness** — toggle components (dense-only, no-rerank, …) to measure each one's contribution (`eval/ablation.py`).
+- **Golden set** at `data/eval/golden_set.json`; optional **MLflow** tracking. Run with `make eval`.
+
+> Measured result: post-hoc claim grounding lifted **faithfulness +56 % (0.53 → 0.82)** with the retrieval metrics unchanged — the full before/after is in [ARCHITECTURE.md §6](ARCHITECTURE.md).
 
 ---
 
